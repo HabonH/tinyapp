@@ -3,7 +3,7 @@ const app = express();
 const PORT = 8080;
 
 function generateRandomString() {
-  let newID = Math.random(1).toString(36).substring(2, 8);
+  let newID = Math.floor((1 + Math.random()) * 0x1000000).toString(16).substring(1);;
   return newID;
 }
 
