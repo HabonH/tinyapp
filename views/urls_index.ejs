@@ -37,7 +37,8 @@
           <tr>
             <td><%= url %></td>
             <td><%= urls[url] %></td>
-          </tr>
+            <td><form method="POST" action="/urls/<%= url %>/delete"> <input type="submit" class="btn btn-outline-danger" value="Delete"></form></td>
+          </tr> 
         <% } %>
       </tbody>
     </table>
