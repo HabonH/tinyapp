@@ -34,7 +34,7 @@ const findUserByEmail = (email) => {          // Email helper function, to see i
       return users[key];
     }
   }
-  return response.sendStatus(400);
+  return null;
 };
 
 
@@ -135,24 +135,26 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
+  const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
-  const id = generateRandomString();
-  if (email || password === "") {
-    return response.sendStatus(400);
+  if (email || password === '') {
+    return `400: To register, please provide your e-mail and password` 
   }
-
   const user = {
     id: id,
     email: email,
     password: password
   };
+  const userExists = findUserByEmail(req.body.email);
+  if (userExists){
+    return `400: User with ${email} is already registered`; 
+  }
   users[user.id] = user;
   // console.log("user_id --> ", user.id);
   // console.log("id --> ", id);
-
+  console.log("Did error get logged---> ", users);
   res.cookie('user_id', user.id);
-  console.log("user in users object w/ user_id cookie value --> ", users["user.id"]);
   res.redirect("/urls");
 });
 
