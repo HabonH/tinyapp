@@ -9,17 +9,24 @@
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-        <a class="nav-item nav-link" href="/login">Login</a>
-        <a class="nav-item nav-link" href="/register">Register</a>
         <div class="nav-item nav-link float-end">
           <% if(user){ %>
-          Logged in User: <%= user.email %> 
+            Logged in User: <%= user.email %>
+              <form method="POST" action="/logout">
+                <button type="Submit" class="btn btn-outline-secondary">Logout</button>
+              </form>
         </div>
-          <form method="POST" action="/logout">
-            <button type="Submit" class="btn btn-outline-secondary">Logout</button>
-          </form>
-            <% } %>
       </div>
     </div>
+    <% } else {%>
+      <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+        <div class="navbar-nav">
+          <a class="nav-item nav-link" href="/login">Login</a>
+          <a class="nav-item nav-link" href="/register">Register</a>
+          <div class="nav-item nav-link float-end">
+          </div>
+          <% } %>
+        </div>
+      </div>
   </nav>
 </header>
