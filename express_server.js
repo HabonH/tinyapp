@@ -112,13 +112,33 @@ app.post("/urls/:shortURL", (req, res) => {
   res.redirect("/urls");
 });
 
+app.get("/login", (req, res) => {
+  const templateVars = {
+    user: users[req.cookies.user_id]
+  };
+  res.render("urls_login", templateVars);
+});
+
 app.post("/login", (req, res) => {
-  const username = req.body.username;
-  // console.log("req.body--> ", username);
-  res.cookie("username", username);
+  const email = req.body.email;
+  const password = req.body.password;
+  if (email === '' || password === '') {
+    return res.status(400).send("To login, please provide your e-mail and password");
+  }
+  const userExists = findUserByEmail(email);
+  if (!userExists) {
+    return res.status(403).send(`User associated with ${email} doesn't exist, please register`);
 
-  res.redirect("/urls");
-
+  } else if (userExists) {
+    console.log("User does exist ---> ", userExists);
+    // I need to compare if userExist's password matches with the req.body.password
+    if (userExists.password === password) {
+      res.cookie("user_id", userExists.id);
+      res.redirect("/urls");
+    } else {
+      return res.status(403).send("Invalid password");
+    }
+  }
 });
 
 app.post("/logout", (req, res) => {
@@ -138,19 +158,19 @@ app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
-  
+
   const user = {
     id: id,
     email: email,
     password: password
   };
-  
+
   if (email === '' || password === '') {
     return res.status(400).send("To register, please provide your e-mail and password");
-    }
-  
+  }
+
   const userExists = findUserByEmail(email);
-  if (userExists){
+  if (userExists) {
     return res.status(400).send(`User with ${email} is already registered`);
   } else {
     users[user.id] = user;
@@ -165,3 +185,7 @@ app.post("/register", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
+
+
+
