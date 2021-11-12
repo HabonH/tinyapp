@@ -74,7 +74,7 @@ app.post("/urls", (req, res) => {
 
     // console.log("shortURL--> ", newShortURL);
     // console.log("longURL--> ", longURL);
-    console.log("Updated URL database ", urlDatabase)
+    console.log("Updated URL database ", urlDatabase);
 
     res.redirect(`/urls/${newShortURL}`);
   }
@@ -144,13 +144,16 @@ app.get("/u/:shortURL", (req, res) => {
 // --- Allows clients to view shortURLs with assigned longURL.
 app.get("/urls/:shortURL", (req, res) => {
   if (urlDatabase[req.params.shortURL]) {
+
+    if (urlDatabase[req.params.shortURL].userID !== req.cookies.user_id) {
+      return res.status(400).send("Sorry, you're not authorized to edit this URL.");
+    }
     const templateVars = {
       shortURL: req.params.shortURL,
       longURL: urlDatabase[req.params.shortURL].longURL,
       userID: urlDatabase[req.params.shortURL].userID,
       user: users[req.cookies.user_id]
     };
-
     res.render("urls_show", templateVars);
   } else {
     res.status(400).send("The short URL you've entered doesn't match with an existing long URL.");
@@ -176,10 +179,14 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 // --- Allows clients create a new shortURL with long URL, then redirect to /urls page
 app.post("/urls/:shortURL", (req, res) => { //**HERE!!***Not editing existing url
 
+
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL].longURL;
+  console.log("shortURL ---> ", shortURL);
+  const longURL = req.body.longURL;
+  console.log("longURL --> ", longURL);
   urlDatabase[shortURL].longURL = longURL;
-  
+  console.log("UrlDatabase ---> ", urlDatabase);
+
   res.redirect("/urls");
 
 
