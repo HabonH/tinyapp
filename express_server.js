@@ -2,6 +2,8 @@ const express = require("express");
 const cookieParser = require('cookie-parser');
 const bodyParser = require("body-parser");
 const { response } = require("express");
+const bcrypt = require('bcryptjs');
+
 
 const app = express();
 const PORT = 8080;
@@ -23,7 +25,6 @@ const users = {
   }
 };
 
-
 const urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
@@ -35,6 +36,8 @@ const urlDatabase = {
   }
 };
 
+
+
 const findUserByEmail = (userEmail) => {          // Email helper function, to see if a user has existing email registered
   for (const key in users) {
     if (users[key].email === userEmail) {
@@ -43,42 +46,6 @@ const findUserByEmail = (userEmail) => {          // Email helper function, to s
   }
   return null;
 };
-
-// --- Generates a random alphanumeric string
-function generateRandomString() {
-  let newID = Math.floor((1 + Math.random()) * 0x1000000).toString(16).substring(1);;
-  return newID;
-}
-
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
-//--- Allows clients to create a shortURL if they are logged in, then redirects them to that new shortURL page after adding longURL + userID to urlDatabase
-app.post("/urls", (req, res) => {
-  // console.log("req.body---> ", req.body);  // Log the POST request body to the console
-  if (!users[req.cookies.user_id]) {
-    res.redirect("/login");
-  } else if (users[req.cookies.user_id]) {
-    const newShortURL = generateRandomString();
-    const { longURL } = req.body;
-    urlDatabase[newShortURL] = { longURL, userID: req.cookies.user_id };
-
-    // console.log("shortURL--> ", newShortURL);
-    // console.log("longURL--> ", longURL);
-    console.log("Updated URL database ", urlDatabase);
-
-    res.redirect(`/urls/${newShortURL}`);
-  }
-});
 
 const urlsForUser = (id) => {
   // Take urlDatabase and return entries created by the user
@@ -95,8 +62,27 @@ const urlsForUser = (id) => {
   }
   return userUrls;
 };
+// --- Generates a random alphanumeric string
+function generateRandomString() {
+  let newID = Math.floor((1 + Math.random()) * 0x1000000).toString(16).substring(1);;
+  return newID;
+}
+//----------------------------Below are app.GET--------------------------------------------------------
+app.get("/", (req, res) => {
+  res.send("Hello!");
+});
 
-// --- Allows clients to view existing shortURL and longURL. *** Can't edit and can
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
+});
+
+app.get("/hello", (req, res) => {
+  res.send("<html><body>Hello <b>World</b></body></html>\n");
+});
+
+
+
+// --- Allows clients to view existing shortURL and longURL. 
 app.get("/urls", (req, res) => {
   if (!users[req.cookies.user_id]) {
     res.cookie("error", "Please login or register to access TinyApp");
@@ -110,6 +96,7 @@ app.get("/urls", (req, res) => {
     res.render("urls_index", templateVars);
   }
 });
+
 
 // --- Takes client to url/new page but must be logged in in order to create new URL
 app.get("/urls/new", (req, res) => {
@@ -130,6 +117,7 @@ app.get("/urls/new", (req, res) => {
   }
 });
 
+
 // --- Redirects client to existing longURL via shortURL link *** longURL not working
 app.get("/u/:shortURL", (req, res) => {
   // if the user is logged in, they can have access to their urls
@@ -141,10 +129,12 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
+
+
 // --- Allows clients to view shortURLs with assigned longURL.
 app.get("/urls/:shortURL", (req, res) => {
   if (urlDatabase[req.params.shortURL]) {
-
+    
     if (urlDatabase[req.params.shortURL].userID !== req.cookies.user_id) {
       return res.status(400).send("Sorry, you're not authorized to edit this URL.");
     }
@@ -158,6 +148,70 @@ app.get("/urls/:shortURL", (req, res) => {
   } else {
     res.status(400).send("The short URL you've entered doesn't match with an existing long URL.");
   }
+  
+});
+
+
+// --- Allows clients to get/read to the login page 
+app.get("/login", (req, res) => {
+  const templateVars = {
+    user: users[req.cookies.user_id],
+    email: req.cookies.email,
+    error_msg: req.cookies.error
+  };
+  res.clearCookie("error");
+  res.render("urls_login", templateVars);
+});
+
+
+
+// --- Allows clients to view registration page 
+app.get("/register", (req, res) => {
+  const templateVars = {
+    user: users[req.cookies.user_id],
+    urls: urlDatabase
+  };
+  res.render("urls_register", templateVars);
+});
+
+
+//----------------------------Below are app.POST--------------------------------------------------------
+
+
+
+//--- Allows clients to create a shortURL if they are logged in, then redirects them to that new shortURL page after adding longURL + userID to urlDatabase
+app.post("/urls", (req, res) => {
+  // console.log("req.body---> ", req.body);  // Log the POST request body to the console
+  if (!users[req.cookies.user_id]) {
+    res.redirect("/login");
+  } else if (users[req.cookies.user_id]) {
+    const newShortURL = generateRandomString();
+    const { longURL } = req.body;
+    urlDatabase[newShortURL] = { longURL, userID: req.cookies.user_id };
+
+    // console.log("shortURL--> ", newShortURL);
+    // console.log("longURL--> ", longURL);
+    console.log("Updated URL database ", urlDatabase);
+
+    res.redirect(`/urls/${newShortURL}`);
+  }
+});
+
+
+
+// --- Allows clients create a new shortURL with long URL, then redirect to /urls page
+app.post("/urls/:shortURL", (req, res) => { //**HERE!!***Not editing existing url
+
+
+  const shortURL = req.params.shortURL;
+  console.log("shortURL ---> ", shortURL);
+  const longURL = req.body.longURL;
+  console.log("longURL --> ", longURL);
+  urlDatabase[shortURL].longURL = longURL;
+  console.log("UrlDatabase ---> ", urlDatabase);
+
+  res.redirect("/urls");
+
 
 });
 
@@ -176,39 +230,15 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   }
 });
 
-// --- Allows clients create a new shortURL with long URL, then redirect to /urls page
-app.post("/urls/:shortURL", (req, res) => { //**HERE!!***Not editing existing url
 
-
-  const shortURL = req.params.shortURL;
-  console.log("shortURL ---> ", shortURL);
-  const longURL = req.body.longURL;
-  console.log("longURL --> ", longURL);
-  urlDatabase[shortURL].longURL = longURL;
-  console.log("UrlDatabase ---> ", urlDatabase);
-
-  res.redirect("/urls");
-
-
-});
-
-// --- Allows clients to get/read to the login page 
-app.get("/login", (req, res) => {
-  const templateVars = {
-    user: users[req.cookies.user_id],
-    email: req.cookies.email,
-    error_msg: req.cookies.error
-  };
-  res.clearCookie("error");
-  res.render("urls_login", templateVars);
-});
 
 
 // --- Allows clients to send post requests to login, as long as email and password exists and matches in users database
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  if (email === '' || password === '') {
+
+  if (!email || !password) {
     return res.status(400).send("To login, please provide your e-mail and password");
   }
   const user = findUserByEmail(email);
@@ -218,14 +248,57 @@ app.post("/login", (req, res) => {
   } else if (user) {
     // console.log("User does exist ---> ", user);
     // I need to compare if user's password matches with the req.body.password
-    if (user.password === password) {
+    
+    if(bcrypt.compareSync(password, user.password)){
       res.cookie("user_id", user.id);
       res.redirect("/urls");
+      // console.log("TRUUUE or false? ", bcrypt.compareSync(password, user.password))
     } else {
-      return res.status(403).send("Invalid password");
+      return res.status(403).send("Password doesn't match to this account");
     }
   }
 });
+
+
+
+// --- Allows clients to register accurately according to conditions
+app.post("/register", (req, res) => {
+  const id = generateRandomString();
+  const email = req.body.email;
+  const password = req.body.password;
+  
+  
+  
+  if (!email || !password) {
+    return res.status(400).send("To register, please provide your e-mail and password");
+  }
+  
+  const user = findUserByEmail(email);
+  
+  if (user) {
+    return res.status(400).send(`User with ${email} is already registered`);
+  } 
+  
+  // Hash user's password when registering
+  if (!user){ 
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  const newUser = {
+    id,
+    email,
+    password: hashedPassword
+  };
+  users[newUser.id] = newUser;
+  // console.log("Users ---> ", users);
+  // console.log("Compare passwords",bcrypt.compareSync(password, hashedPassword) )
+    res.cookie('user_id', newUser.id);
+    res.redirect("/urls");
+  }
+  
+  // console.log("user_id --> ", user.id);
+  // console.log("id --> ", id);
+  // console.log("Did error get logged---> ", users);
+});
+
 
 // --- Allows clients to log out and it clears cookies upon logout
 app.post("/logout", (req, res) => {
@@ -233,43 +306,6 @@ app.post("/logout", (req, res) => {
   res.redirect("/urls");
 });
 
-// --- Allows clients to view registration page 
-app.get("/register", (req, res) => {
-  const templateVars = {
-    user: users[req.cookies.user_id],
-    urls: urlDatabase
-  };
-  res.render("urls_register", templateVars);
-});
-
-// --- Allows clients to register accurately according to conditions
-app.post("/register", (req, res) => {
-  const id = generateRandomString();
-  const email = req.body.email;
-  const password = req.body.password;
-
-  const newUser = {
-    id: id,
-    email: email,
-    password: password
-  };
-
-  if (email === '' || password === '') {
-    return res.status(400).send("To register, please provide your e-mail and password");
-  }
-
-  const user = findUserByEmail(email);
-  if (user) {
-    return res.status(400).send(`User with ${email} is already registered`);
-  } else {
-    users[newUser.id] = newUser;
-    res.cookie('user_id', newUser.id);
-    res.redirect("/urls");
-  }
-  // console.log("user_id --> ", user.id);
-  // console.log("id --> ", id);
-  // console.log("Did error get logged---> ", users);
-});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
