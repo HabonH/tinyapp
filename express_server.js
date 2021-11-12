@@ -3,6 +3,7 @@ const cookieSession = require('cookie-session');
 const bodyParser = require("body-parser");
 const { response } = require("express");
 const bcrypt = require('bcryptjs');
+const e = require("express");
 
 
 const app = express();
@@ -42,14 +43,25 @@ const urlDatabase = {
 
 
 
-const findUserByEmail = (userEmail) => {          // Email helper function, to see if a user has existing email registered
-  for (const key in users) {
-    if (users[key].email === userEmail) {
-      return users[key];
+// const findUserByEmail = (userEmail) => {          // Email helper function, to see if a user has existing email registered
+//   for (const key in users) {
+//     if (users[key].email === userEmail) { //// refactored below
+//       return users[key];
+//     }
+//   }
+//   return null;
+// };
+
+const getUserByEmail = (email, usersDatabase) => {
+  for (const user in usersDatabase) {
+    if (usersDatabase[user].email === email) {
+      return users[user];
     }
   }
   return null;
 };
+
+
 
 const urlsForUser = (id) => {
   // Take urlDatabase and return entries created by the user
@@ -89,7 +101,7 @@ app.get("/hello", (req, res) => {
 // --- Allows clients to view existing shortURL and longURL. 
 app.get("/urls", (req, res) => {
   if (!users[req.session.user_id]) {
-    return res.status(400).send("Please login or register to access TinyApp");
+    return res.status(400).send("To access TinyApp, please <a href= '/login'> login </a> or <a href= '/register'> register </a>");
 
   }
   if (users[req.session.user_id]) {
@@ -249,7 +261,7 @@ app.post("/login", (req, res) => {
     return res.status(400).send("To login, please provide your e-mail and password");
   }
   
-  const user = findUserByEmail(email);
+  const user = getUserByEmail(email, users);
   if (!user) {
     return res.status(403).send(`User associated with ${email} doesn't exist, please register`);
 
@@ -288,7 +300,7 @@ app.post("/register", (req, res) => {
     return res.status(400).send("To register, please provide your e-mail and password");
   }
 
-  const user = findUserByEmail(email);
+  const user = getUserByEmail(email, users);
 
   if (user) {
     return res.status(400).send(`User with ${email} is already registered`);
