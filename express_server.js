@@ -74,7 +74,7 @@ app.post("/urls", (req, res) => {
 
     // console.log("shortURL--> ", newShortURL);
     // console.log("longURL--> ", longURL);
-    // console.log("Updated URL database ", urlDatabase)
+    console.log("Updated URL database ", urlDatabase)
 
     res.redirect(`/urls/${newShortURL}`);
   }
@@ -102,13 +102,13 @@ app.get("/urls", (req, res) => {
     res.cookie("error", "Please login or register to access TinyApp");
     res.redirect("/login");
   } else {
-  const templateVars = {
-    user: users[req.cookies.user_id],
-    urls: urlsForUser(req.cookies.user_id)
-  };
-  // console.log("urlDatabase --->", urlDatabase)
-  res.render("urls_index", templateVars);
-}
+    const templateVars = {
+      user: users[req.cookies.user_id],
+      urls: urlsForUser(req.cookies.user_id)
+    };
+    // console.log("urlDatabase --->", urlDatabase)
+    res.render("urls_index", templateVars);
+  }
 });
 
 // --- Takes client to url/new page but must be logged in in order to create new URL
@@ -125,6 +125,7 @@ app.get("/urls/new", (req, res) => {
     const templateVars = {
       user: users[req.cookies.user_id]
     };
+
     res.render("urls_new", templateVars);
   }
 });
@@ -132,7 +133,7 @@ app.get("/urls/new", (req, res) => {
 // --- Redirects client to existing longURL via shortURL link *** longURL not working
 app.get("/u/:shortURL", (req, res) => {
   // if the user is logged in, they can have access to their urls
-  
+
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
   // console.log("shortURL ---> ", shortURL)
@@ -140,17 +141,21 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
-// --- Allows clients to view shortURLs with assigned longURL. *** longURL not being displayed in urls_shows & url not dis
+// --- Allows clients to view shortURLs with assigned longURL.
 app.get("/urls/:shortURL", (req, res) => {
-  
-  
-  const shortURL = req.params.shortURL;
-  // console.log("shortURL variable ---> ", shortURL);
-  const longURL = urlDatabase[shortURL].longURL;
-  const userID = urlDatabase[shortURL].userID;
-  // console.log("longUrl ---> ", longURL);
-  const templateVars = { user: users[req.cookies.user_id], shortURL: shortURL, longURL: longURL, userID: userID };
-  res.render("urls_show", templateVars);
+  if (urlDatabase[req.params.shortURL]) {
+    const templateVars = {
+      shortURL: req.params.shortURL,
+      longURL: urlDatabase[req.params.shortURL].longURL,
+      userID: urlDatabase[req.params.shortURL].userID,
+      user: users[req.cookies.user_id]
+    };
+
+    res.render("urls_show", templateVars);
+  } else {
+    res.status(400).send("The short URL you've entered doesn't match with an existing long URL.");
+  }
+
 });
 
 
@@ -169,18 +174,15 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 // --- Allows clients create a new shortURL with long URL, then redirect to /urls page
-app.post("/urls/:shortURL", (req, res) => { //--------------Not editing existing url
-  if (!users[req.cookies.user_id]) {
-    res.cookie("error", "Please login to edit URL");
-    res.redirect("/login");
+app.post("/urls/:shortURL", (req, res) => { //**HERE!!***Not editing existing url
 
-  } else if (users[req.cookies.user_id]) {
-    const shortURL = req.params.shortURL;
-    const longURL = urlDatabase[shortURL].longURL;
-    urlDatabase[shortURL].longURL = longURL;
-    res.redirect("/urls");
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL].longURL;
+  urlDatabase[shortURL].longURL = longURL;
+  
+  res.redirect("/urls");
 
-  }
+
 });
 
 // --- Allows clients to get/read to the login page 
