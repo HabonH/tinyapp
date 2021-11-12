@@ -19,14 +19,10 @@ const users = {
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: "123"
   }
 };
 
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com"
-// };
 
 const urlDatabase = {
   b6UTxQ: {
@@ -35,7 +31,7 @@ const urlDatabase = {
   },
   i3BoGr: {
     longURL: "https://www.google.ca",
-    userID: "aJ48lW"
+    userID: "user2RandomID"
   }
 };
 
@@ -73,25 +69,46 @@ app.post("/urls", (req, res) => {
     res.redirect("/login");
   } else if (users[req.cookies.user_id]) {
     const newShortURL = generateRandomString();
-    const {longURL} = req.body;
-    urlDatabase[newShortURL] = {longURL, userID: req.cookies.user_id}
+    const { longURL } = req.body;
+    urlDatabase[newShortURL] = { longURL, userID: req.cookies.user_id };
 
     // console.log("shortURL--> ", newShortURL);
     // console.log("longURL--> ", longURL);
     // console.log("Updated URL database ", urlDatabase)
-    
+
     res.redirect(`/urls/${newShortURL}`);
   }
 });
 
+const urlsForUser = (id) => {
+  // Take urlDatabase and return entries created by the user
+  const userUrls = {};
+  for (const shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID === id) {
+      // console.log("shortURL --> ", shortURL);
+      // console.log("urlDatabase[shortURL] --> ", urlDatabase[shortURL]);
+      // console.log("userUrls before --> ", userUrls);
+      userUrls[shortURL] = urlDatabase[shortURL]; //--- userUrls[shortURL] is being added into urlDatabase with the shortURL the user created
+      // console.log("userUrls AFTER --> ", userUrls);
+
+    }
+  }
+  return userUrls;
+};
+
 // --- Allows clients to view existing shortURL and longURL. *** Can't edit and can
 app.get("/urls", (req, res) => {
+  if (!users[req.cookies.user_id]) {
+    res.cookie("error", "Please login or register to access TinyApp");
+    res.redirect("/login");
+  } else {
   const templateVars = {
     user: users[req.cookies.user_id],
-    urls: urlDatabase
+    urls: urlsForUser(req.cookies.user_id)
   };
   // console.log("urlDatabase --->", urlDatabase)
   res.render("urls_index", templateVars);
+}
 });
 
 // --- Takes client to url/new page but must be logged in in order to create new URL
@@ -114,15 +131,19 @@ app.get("/urls/new", (req, res) => {
 
 // --- Redirects client to existing longURL via shortURL link *** longURL not working
 app.get("/u/:shortURL", (req, res) => {
+  // if the user is logged in, they can have access to their urls
+  
   const shortURL = req.params.shortURL;
-  // console.log("shortURL ---> ", shortURL)
   const longURL = urlDatabase[shortURL].longURL;
+  // console.log("shortURL ---> ", shortURL)
   // console.log("longURL ---> ", longURL);
   res.redirect(longURL);
 });
 
 // --- Allows clients to view shortURLs with assigned longURL. *** longURL not being displayed in urls_shows & url not dis
 app.get("/urls/:shortURL", (req, res) => {
+  
+  
   const shortURL = req.params.shortURL;
   // console.log("shortURL variable ---> ", shortURL);
   const longURL = urlDatabase[shortURL].longURL;
@@ -138,12 +159,12 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   if (!users[req.cookies.user_id]) {
     res.cookie("error", "Please login to delete URL");
     res.redirect("/login");
-  
+
   } else if (users[req.cookies.user_id]) {
-  const shortURL = req.params.shortURL;
-  // const longURL= urlDatabase[req.params.shortURL];
-  delete urlDatabase[shortURL];
-  res.redirect("/urls");
+    const shortURL = req.params.shortURL;
+    // const longURL= urlDatabase[req.params.shortURL];
+    delete urlDatabase[shortURL];
+    res.redirect("/urls");
   }
 });
 
@@ -152,12 +173,12 @@ app.post("/urls/:shortURL", (req, res) => { //--------------Not editing existing
   if (!users[req.cookies.user_id]) {
     res.cookie("error", "Please login to edit URL");
     res.redirect("/login");
-  
+
   } else if (users[req.cookies.user_id]) {
-  const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL].longURL;
-  urlDatabase[shortURL].longURL = longURL;
-  res.redirect("/urls");
+    const shortURL = req.params.shortURL;
+    const longURL = urlDatabase[shortURL].longURL;
+    urlDatabase[shortURL].longURL = longURL;
+    res.redirect("/urls");
 
   }
 });
@@ -244,7 +265,3 @@ app.post("/register", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
-
-
-
