@@ -1,5 +1,5 @@
 const express = require("express");
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bodyParser = require("body-parser");
 const { response } = require("express");
 const bcrypt = require('bcryptjs');
@@ -7,7 +7,10 @@ const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = 8080;
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.set("view engine", "ejs");
@@ -16,12 +19,13 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "123"
+    password: bcrypt.hashSync("asd", 10)
+    
   }
 };
 
@@ -84,37 +88,40 @@ app.get("/hello", (req, res) => {
 
 // --- Allows clients to view existing shortURL and longURL. 
 app.get("/urls", (req, res) => {
-  if (!users[req.cookies.user_id]) {
-    res.cookie("error", "Please login or register to access TinyApp");
-    res.redirect("/login");
-  } else {
+  if (!users[req.session.user_id]) {
+    return res.status(400).send("Please login or register to access TinyApp");
+
+  }
+  if (users[req.session.user_id]) {
     const templateVars = {
-      user: users[req.cookies.user_id],
-      urls: urlsForUser(req.cookies.user_id)
+      user: users[req.session.user_id],
+      urls: urlsForUser(req.session.user_id)
     };
-    // console.log("urlDatabase --->", urlDatabase)
     res.render("urls_index", templateVars);
+    // console.log("urlDatabase --->", urlDatabase)
   }
 });
 
 
 // --- Takes client to url/new page but must be logged in in order to create new URL
 app.get("/urls/new", (req, res) => {
-  // const userID = req.cookies.user_id; --- don't remove these comments, they help for self readibility
+  // const userID = req.session.user_id; --- don't remove these comments, they help for self readibility
   // const user = users[userID];
   // const templateVars = {
   //   user,
   // };
-  if (!users[req.cookies.user_id]) {
-    res.cookie("error", "Please login or register to create a new URL");
+  if (!users[req.session.user_id]) {
     res.redirect("/login");
-  } else if (users[req.cookies.user_id]) {
-    const templateVars = {
-      user: users[req.cookies.user_id]
-    };
+    return res.status(400).send("Please login or register to create a new URL");
 
+  }
+  if (users[req.session.user_id]) {
+    const templateVars = {
+      user: users[req.session.user_id]
+    };
     res.render("urls_new", templateVars);
   }
+
 });
 
 
@@ -134,30 +141,30 @@ app.get("/u/:shortURL", (req, res) => {
 // --- Allows clients to view shortURLs with assigned longURL.
 app.get("/urls/:shortURL", (req, res) => {
   if (urlDatabase[req.params.shortURL]) {
-    
-    if (urlDatabase[req.params.shortURL].userID !== req.cookies.user_id) {
+
+    if (urlDatabase[req.params.shortURL].userID !== req.session.user_id) {
       return res.status(400).send("Sorry, you're not authorized to edit this URL.");
     }
     const templateVars = {
       shortURL: req.params.shortURL,
       longURL: urlDatabase[req.params.shortURL].longURL,
       userID: urlDatabase[req.params.shortURL].userID,
-      user: users[req.cookies.user_id]
+      user: users[req.session.user_id]
     };
     res.render("urls_show", templateVars);
   } else {
     res.status(400).send("The short URL you've entered doesn't match with an existing long URL.");
   }
-  
+
 });
 
 
 // --- Allows clients to get/read to the login page 
 app.get("/login", (req, res) => {
   const templateVars = {
-    user: users[req.cookies.user_id],
-    email: req.cookies.email,
-    error_msg: req.cookies.error
+    user: users[req.session.user_id],
+    email: req.session.email,
+    error_msg: req.session.error
   };
   res.clearCookie("error");
   res.render("urls_login", templateVars);
@@ -168,7 +175,7 @@ app.get("/login", (req, res) => {
 // --- Allows clients to view registration page 
 app.get("/register", (req, res) => {
   const templateVars = {
-    user: users[req.cookies.user_id],
+    user: users[req.session.user_id],
     urls: urlDatabase
   };
   res.render("urls_register", templateVars);
@@ -182,12 +189,12 @@ app.get("/register", (req, res) => {
 //--- Allows clients to create a shortURL if they are logged in, then redirects them to that new shortURL page after adding longURL + userID to urlDatabase
 app.post("/urls", (req, res) => {
   // console.log("req.body---> ", req.body);  // Log the POST request body to the console
-  if (!users[req.cookies.user_id]) {
+  if (!users[req.session.user_id]) {
     res.redirect("/login");
-  } else if (users[req.cookies.user_id]) {
+  } else if (users[req.session.user_id]) {
     const newShortURL = generateRandomString();
     const { longURL } = req.body;
-    urlDatabase[newShortURL] = { longURL, userID: req.cookies.user_id };
+    urlDatabase[newShortURL] = { longURL, userID: req.session.user_id };
 
     // console.log("shortURL--> ", newShortURL);
     // console.log("longURL--> ", longURL);
@@ -218,11 +225,11 @@ app.post("/urls/:shortURL", (req, res) => { //**HERE!!***Not editing existing ur
 
 // --- Allows clients to delete existing shortURL
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (!users[req.cookies.user_id]) {
-    res.cookie("error", "Please login to delete URL");
+  if (!users[req.session.user_id]) {
     res.redirect("/login");
+    return res.status(400).send("Please login to delete URL");
 
-  } else if (users[req.cookies.user_id]) {
+  } else if (users[req.session.user_id]) {
     const shortURL = req.params.shortURL;
     // const longURL= urlDatabase[req.params.shortURL];
     delete urlDatabase[shortURL];
@@ -241,21 +248,29 @@ app.post("/login", (req, res) => {
   if (!email || !password) {
     return res.status(400).send("To login, please provide your e-mail and password");
   }
+  
   const user = findUserByEmail(email);
   if (!user) {
     return res.status(403).send(`User associated with ${email} doesn't exist, please register`);
 
-  } else if (user) {
+  }
+  
+  if (user) {
     // console.log("User does exist ---> ", user);
     // I need to compare if user's password matches with the req.body.password
-    
-    if(bcrypt.compareSync(password, user.password)){
-      res.cookie("user_id", user.id);
+
+    if (bcrypt.compareSync(password, user.password)) {
+      // res.cookie("user_id", user.id);
+      req.session.user_id = user.id;
       res.redirect("/urls");
-      // console.log("TRUUUE or false? ", bcrypt.compareSync(password, user.password))
-    } else {
-      return res.status(403).send("Password doesn't match to this account");
     }
+    console.log("Password input ---> ", password);
+    console.log("Password of existing user ---> ", user.password);
+    console.log("TRUUUE or false? ", bcrypt.compareSync(password, user.password))
+  }
+  
+  if (!bcrypt.compareSync(password, user.password)) {
+    return res.status(403).send("Password doesn't match to this account");
   }
 });
 
@@ -266,34 +281,36 @@ app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
-  
-  
-  
+
+
+
   if (!email || !password) {
     return res.status(400).send("To register, please provide your e-mail and password");
   }
-  
+
   const user = findUserByEmail(email);
-  
+
   if (user) {
     return res.status(400).send(`User with ${email} is already registered`);
-  } 
-  
+  }
+
   // Hash user's password when registering
-  if (!user){ 
-  const hashedPassword = bcrypt.hashSync(password, 10);
-  const newUser = {
-    id,
-    email,
-    password: hashedPassword
-  };
-  users[newUser.id] = newUser;
-  // console.log("Users ---> ", users);
-  // console.log("Compare passwords",bcrypt.compareSync(password, hashedPassword) )
-    res.cookie('user_id', newUser.id);
+  if (!user) {
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    const newUser = {
+      id,
+      email,
+      password: hashedPassword
+    };
+    users[newUser.id] = newUser;
+    // console.log("Users ---> ", users);
+    // console.log("Compare passwords",bcrypt.compareSync(password, hashedPassword) )
+    // res.cookie('user_id', newUser.id);
+    req.session.user_id = newUser.id;
+
     res.redirect("/urls");
   }
-  
+
   // console.log("user_id --> ", user.id);
   // console.log("id --> ", id);
   // console.log("Did error get logged---> ", users);
@@ -302,7 +319,7 @@ app.post("/register", (req, res) => {
 
 // --- Allows clients to log out and it clears cookies upon logout
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session = null;
   res.redirect("/urls");
 });
 
