@@ -16,9 +16,6 @@
 <body>
 
   <%- include('./partials/_header') %>
-  <%if(error_msg){%>
-    <h5><%=error_msg%></h5>
- <% } %>
         <h5>Login</h5>
         <form method="POST" action="/login" class="form-inline my-2 my-lg-0 ml-auto">
           <input type="text" name="email" id="email" placeholder="Enter Email" class="form-control">
