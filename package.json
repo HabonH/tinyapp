@@ -4,8 +4,10 @@
   "description": "",
   "main": "express_server.js",
   "scripts": {
+    "start": "./node_modules/.bin/nodemon -L express_server.js",
     "test": "./node_modules/mocha/bin/mocha"
   },
+
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HabonH/tinyapp.git"

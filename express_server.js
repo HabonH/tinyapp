@@ -7,17 +7,12 @@ const { getUserByEmail, urlDatabase, users, urlsForUser, generateRandomString } 
 const app = express();
 const PORT = 8080;
 
-app.use(cookieSession({
-  name: 'session',
-  keys: ['key1', 'key2']
-}));
+app.use(cookieSession({ name: 'session', keys: ['key1', 'key2'] }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 
 
 
-
-//----------------------------Below are app.GET--------------------------------------------------------
 app.get("/", (req, res) => {
 
   const user = users[req.session.user_id];
@@ -33,12 +28,12 @@ app.get("/", (req, res) => {
   }
 });
 
+
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
 
-// --- Allows clients to view existing shortURL and longURL. 
 app.get("/urls", (req, res) => {
 
   const user = users[req.session.user_id];
@@ -53,7 +48,6 @@ app.get("/urls", (req, res) => {
 });
 
 
-// --- Takes client to url/new page but must be logged in in order to create new URL
 app.get("/urls/new", (req, res) => {
   const user = users[req.session.user_id];
 
@@ -69,7 +63,6 @@ app.get("/urls/new", (req, res) => {
 });
 
 
-// --- Redirects client to existing longURL via shortURL link *** longURL not working
 app.get("/u/:shortURL", (req, res) => {
 
   const shortURL = req.params.shortURL;
@@ -79,8 +72,6 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 
-
-// --- Allows clients to view shortURLs with assigned longURL.
 app.get("/urls/:shortURL", (req, res) => {
   const user = users[req.session.user_id];
   const shortURL = req.params.shortURL;
@@ -102,7 +93,6 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 
-// --- Allows clients to get/read to the login page 
 app.get("/login", (req, res) => {
   const user = users[req.session.user_id];
   const email = req.session.email;
@@ -116,8 +106,6 @@ app.get("/login", (req, res) => {
 });
 
 
-
-// --- Allows clients to view registration page 
 app.get("/register", (req, res) => {
   const user = users[req.session.user_id];
   const urls = urlDatabase;
@@ -130,8 +118,6 @@ app.get("/register", (req, res) => {
 //----------------------------Below are app.POST--------------------------------------------------------
 
 
-
-//--- Allows clients to create a shortURL if they are logged in, then redirects them to that new shortURL page after adding longURL + userID to urlDatabase
 app.post("/urls", (req, res) => {
   const user = users[req.session.user_id];
   const newShortURL = generateRandomString();
@@ -148,8 +134,6 @@ app.post("/urls", (req, res) => {
 });
 
 
-
-// --- Allows clients create a new shortURL with long URL, then redirect to /urls page
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = req.body.longURL;
@@ -160,7 +144,6 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 
-// --- Allows clients to delete existing shortURL
 app.post("/urls/:shortURL/delete", (req, res) => {
   const user = users[req.session.user_id];
   const shortURL = req.params.shortURL;
@@ -176,9 +159,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 
-
-
-// --- Allows clients to send post requests to login, as long as email and password exists and matches in users database
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -192,7 +172,7 @@ app.post("/login", (req, res) => {
     return res.status(403).send(`User associated with ${email} doesn't exist, please <a href= '/register'> register </a>`);
 
   }
-
+  console.log("User ---> ", user)
   if (!bcrypt.compareSync(password, user.password)) {
     return res.status(403).send("You've entered an invalid password");
   }
@@ -207,8 +187,6 @@ app.post("/login", (req, res) => {
 });
 
 
-
-// --- Allows clients to register accurately according to conditions
 app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
@@ -218,12 +196,12 @@ app.post("/register", (req, res) => {
   if (!email || !password) {
     return res.status(400).send("To register, please provide your e-mail and password");
   }
-  
+
   const user = getUserByEmail(email);
   if (user) {
     return res.status(400).send(`User with ${email} is already registered`);
   }
-  
+
   if (!user) {
     const newUser = { id, email, password: hashedPassword };
     users[newUser.id] = newUser;
@@ -234,7 +212,6 @@ app.post("/register", (req, res) => {
 });
 
 
-// --- Allows clients to log out and it clears cookies upon logout
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/urls");

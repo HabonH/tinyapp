@@ -9,7 +9,7 @@ const users = {
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: bcrypt.hashSync("dishwasher-funk", 10)
+    password: bcrypt.hashSync("123", 10)
 
   }
 };
@@ -32,27 +32,26 @@ function generateRandomString() {
 
 
 const urlsForUser = (id) => {
-  // Take urlDatabase and return entries created by the user
   const userUrls = {};
-  for (const shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID === id) {
-      // console.log("shortURL --> ", shortURL);
-      // console.log("urlDatabase[shortURL] --> ", urlDatabase[shortURL]);
-      // console.log("userUrls before --> ", userUrls);
-      userUrls[shortURL] = urlDatabase[shortURL]; //--- userUrls[shortURL] is being added into urlDatabase with the shortURL the user created
-      // console.log("userUrls AFTER --> ", userUrls);
 
+  for (const shortURL in urlDatabase) {
+
+    if (urlDatabase[shortURL].userID === id) {
+      userUrls[shortURL] = urlDatabase[shortURL];
     }
   }
+
   return userUrls;
 };
 
 const getUserByEmail = (email) => {
   for (const user in users) {
+
     if (users[user].email === email) {
-      return users[user].id;
+      return users[user];
     }
   }
+
   return null;
 };
 
