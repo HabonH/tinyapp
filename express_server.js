@@ -172,7 +172,7 @@ app.post("/login", (req, res) => {
     return res.status(403).send(`User associated with ${email} doesn't exist, please <a href= '/register'> register </a>`);
 
   }
-  console.log("User ---> ", user)
+ 
   if (!bcrypt.compareSync(password, user.password)) {
     return res.status(403).send("You've entered an invalid password");
   }
