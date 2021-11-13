@@ -4,9 +4,11 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
-!["screenshot description"](#)
 
-!["screenshot description"](#)
+!["Screenshot of URLs page pre-login"](https://github.com/HabonH/tinyapp/blob/master/docs/urls_page.png?raw=true)
+!["Screenshot of registration page"](https://github.com/HabonH/tinyapp/blob/master/docs/register_page.png?raw=true)
+!["Screenshot of login page"](https://github.com/HabonH/tinyapp/blob/master/docs/login_page.png?raw=true)
+!["Screenshot of URLs page post-login"](https://github.com/HabonH/tinyapp/blob/master/docs/urls_page2.png?raw=true)
 
 ## Dependencies
 
