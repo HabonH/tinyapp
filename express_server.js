@@ -66,8 +66,11 @@ app.get("/urls/new", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
 
   const shortURL = req.params.shortURL;
+  const validShortURL = urlDatabase[shortURL];
+  if(!validShortURL){
+    return res.status(400).send("Sorry, there is no longURL associated to the shortURL provided");
+  }
   const longURL = urlDatabase[shortURL].longURL;
-
   res.redirect(longURL);
 });
 
@@ -125,7 +128,7 @@ app.post("/urls", (req, res) => {
   const { longURL } = req.body;
 
   if (!user) {
-    res.redirect("/login");
+    return res.status(400).send("You must login to create a shortURL");
   }
 
   urlDatabase[newShortURL] = { longURL, userID };
