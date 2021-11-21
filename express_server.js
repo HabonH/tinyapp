@@ -68,7 +68,7 @@ app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const validShortURL = urlDatabase[shortURL];
   if(!validShortURL){
-    return res.status(400).send("Sorry, there is no longURL associated to the shortURL provided");
+    return res.status(400).send("Sorry, there is no longURL associated with the shortURL provided");
   }
   const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
